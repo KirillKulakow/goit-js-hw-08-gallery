@@ -51,7 +51,8 @@ function openModal () {
 
 // Закрытие модального окна
 
-function closeModal () {
+function closeModal (e) {
+    if (e.target.nodeName === 'IMG') {return}
     let modal = document.querySelector('.lightbox')
     modal.classList.remove('is-open')
     img.setAttribute('src', '')
