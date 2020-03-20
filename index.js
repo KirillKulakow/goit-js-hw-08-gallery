@@ -1,4 +1,4 @@
-import {default as gallery} from './gallery-items.js'
+import gallery from './gallery-items.js'
 
 let galleryList = document.querySelector('.gallery');
 let img = document.querySelector('.lightbox__image');
@@ -9,27 +9,25 @@ let boxOverlay = document.querySelector('.lightbox__overlay');
 
 // Разметка библиотеки/галереи
 
-let elementsGallery = [];
-gallery.forEach(function(item) {
+let elementsGallery = gallery.reduce(function(acc, item) {
     let liItem = document.createElement('li');
     let link = document.createElement('a');
     let image = document.createElement('img');
-    liItem.setAttribute('class', 'gallery__item');
-    link.setAttribute('class', 'gallery__link');
-    link.setAttribute('href', item.original);
-    image.setAttribute('class', 'gallery__image');
-    image.setAttribute('src', item.preview);
-    image.setAttribute('data-source', item.original);
-    image.setAttribute('alt', item.description);
+
     link.appendChild(image);
     liItem.appendChild(link);
-    elementsGallery.push(liItem);
-})
-elementsGallery = elementsGallery.map(function (el){
-    return el.outerHTML;
-});
-galleryList.insertAdjacentHTML('beforeend', elementsGallery.join(''));
 
+    liItem.classList.add('gallery__item');
+    link.classList.add('gallery__link');
+    image.classList.add('gallery__image');
+
+    link.href = item.original;
+    image.src = item.preview;
+    image.dataset.source = item.original;
+    image.alt = item.description;
+    return acc + liItem.outerHTML;
+}, '');
+galleryList.insertAdjacentHTML('beforeend', elementsGallery);
 let imgList = document.querySelectorAll('.gallery__image')
 
 // Делегирование на ul
@@ -43,8 +41,8 @@ function handleClick (e) {
 // Передача src и alt в модальное окно
 
 function setActiveLink (activeLink, alt) {
-    img.setAttribute('src', activeLink);
-    img.setAttribute('alt', alt);
+    img.src = activeLink;
+    img.alt = alt;
     if (!imgLink.classList.contains('is-open')) {openModal()}
 }
 
@@ -57,11 +55,12 @@ function openModal () {
 // Закрытие модального окна клик
 
 function closeModal (e) {
-    if (e.target.nodeName === 'IMG') {return}
-    let modal = document.querySelector('.lightbox');
-    modal.classList.remove('is-open');
-    img.setAttribute('src', '');
-    img.setAttribute('alt', '');
+    if (e.target.nodeName !== 'IMG') {
+        let modal = document.querySelector('.lightbox');
+        modal.classList.remove('is-open');
+        img.src = '';
+        img.alt = '';
+    };
 }
 
 // Закрытие модального окна Esc
@@ -69,55 +68,61 @@ function closeModal (e) {
 function closeModalButton (e) {
     let modal = document.querySelector('.lightbox');
     modal.classList.remove('is-open');
-    img.setAttribute('src', '');
-    img.setAttribute('alt', '');
+    img.src = '';
+    img.alt = '';
+}
+
+// Поиск текущей картинки в модалке
+
+function findImg () {
+    let img = {};
+    imgList.forEach(function(el, index, array) {
+        let altImg = document.querySelector('.lightbox__image').getAttribute('alt');
+        if (el.alt === altImg) {
+            img = {inx: index, arr: array};
+        }})
+    return img
 }
 
 // Перелистывание вперёд клавишей
 
 function nextImg () {
+    let img = findImg();
     let item = null;
-    imgList.forEach(function(el, index, array) {
-        let altImg = document.querySelector('.lightbox__image').getAttribute('alt');
-        if (el.alt === altImg) {
-            if (index === array.length - 1) {
-                return item = array[array.length - 1];
-            }
-            item = array[index + 1];
-        }
-        })
+    if (img.inx === img.arr.length - 1) {
+        item = img.arr[img.arr.length - 1];
+    } else {
+        item = img.arr[img.inx + 1];
+    }
     setActiveLink(item.getAttribute('data-source'), item.getAttribute('alt'))
 }
 
 // Перелистывание назад клавишей
 
 function prevImg () {
+    let img = findImg();
     let item = null;
-    imgList.forEach(function(el, index, array) {
-        let altImg = document.querySelector('.lightbox__image').getAttribute('alt');
-        if (el.alt === altImg) {
-            if (index === 0) {
-                return item = array[0];
-            }
-            item = array[index - 1];
+        if (img.inx === 0) {
+            item = img.arr[0];
+        } else {
+            item = img.arr[img.inx - 1]; 
         }
-        }) 
     setActiveLink(item.getAttribute('data-source'), item.getAttribute('alt'))
 }
 
 galleryList.addEventListener('click', handleClick)
 closeButton.addEventListener('click', closeModal)
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', (event) => {
     if (event.code === 'Escape' && imgLink.classList.contains('is-open'))  {
         closeModalButton ()
     }
   });
-  document.addEventListener('keydown', function(event) {
+  document.addEventListener('keydown', (event) => {
     if (event.code === 'ArrowRight' && imgLink.classList.contains('is-open'))  {
         nextImg ()
     }
   });
-  document.addEventListener('keydown', function(event) {
+  document.addEventListener('keydown', (event) => {
     if (event.code === 'ArrowLeft' && imgLink.classList.contains('is-open'))  {
         prevImg ()
     }
